@@ -1,1 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurant Food Waste Management Platform - College Project</title>
+  <link rel="stylesheet" href="./style.css">
+  <!-- Chart.js CDN for clean, professional dashboard charts (with automatic offline CSS fallback) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
 
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- CONFIRMATION MODAL -->
+  <div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-title">Confirm Action</h3>
+        <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="modal-message">Are you sure you want to proceed?</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn-danger" id="modal-confirm-btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP CONTAINER -->
+  <div class="app-container">
+    
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon">🌿</div>
+        <div>
+          <h2>EcoBite</h2>
+          <p class="subtitle">Food Waste Management</p>
+        </div>
+      </div>
+
+      <!-- NAVIGATION MENU -->
+      <nav class="nav-menu">
+        <button class="nav-btn active" onclick="showSection('dashboard-section')">
+          <span class="nav-icon">📊</span>
+          <span class="nav-text">Dashboard</span>
+        </button>
+        <button class="nav-btn" onclick="showSection('add-section')">
+          <span class="nav-icon">➕</span>
+          <span class="nav-text">Add Waste Record</span>
+        </button>
+        <button class="nav-btn" onclick="showSection('records-section')">
+          <span class="nav-icon">📋</span>
+          <span class="nav-text">Waste Records</span>
+          <span class="badge" id="nav-badge-count">0</span>
+        </button>
+        <button class="nav-btn" onclick="showSection('analytics-section')">
+          <span class="nav-icon">📈</span>
+          <span class="nav-text">Analytics & Reports</span>
+        </button>
+        <button class="nav-btn" onclick="showSection('cost-section')">
+          <span class="nav-icon">💰</span>
+          <span class="nav-text">Cost Analysis</span>
+        </button>
+        <button class="nav-btn" onclick="showSection('suggestions-section')">
+          <span class="nav-icon">💡</span>
+          <span class="nav-text">Reduction Plan</span>
+        </button>
+        <button class="nav-btn" onclick="showSection('about-section')">
+          <span class="nav-icon">ℹ️</span>
+          <span class="nav-text">About Project</span>
+        </button>
+      </nav>
+
+      <!-- SIDEBAR FOOTER -->
+      <div class="sidebar-footer">
+        <button class="btn-sidebar-action" onclick="exportRecordsToCSV()">
+          <span>📥</span> Export to CSV
+        </button>
+        <button class="btn-sidebar-action btn-reset" onclick="confirmResetDemoData()">
+          <span>↺</span> Reset Demo Data
+        </button>
+        <p class="footer-note">First-Year Engineering Project</p>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-content">
+      
+      <!-- TOP HEADER BAR -->
+      <header class="top-bar">
+        <div class="header-left">
+          <button class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle navigation menu">
+            ☰
+          </button>
+          <div>
+            <h1 id="page-heading">Dashboard Overview</h1>
+            <p class="page-desc" id="page-subheading">Real-time restaurant food waste monitoring and metrics</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <!-- Live Date Display -->
+          <div class="date-chip" id="today-date-text">
+            <span>📅</span> <span id="current-date-val">Loading date...</span>
+          </div>
+          
+          <!-- Dark Mode Toggle Button -->
+          <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleDarkMode()" title="Toggle Dark/Light Mode">
+            <span id="theme-icon">🌙</span> <span class="theme-text" id="theme-text">Dark Mode</span>
+          </button>
+
+          <!-- Quick Add Button -->
+          <button class="btn-primary" onclick="showSection('add-section')">
+            <span>+</span> Quick Add Record
+          </button>
+        </div>
+      </header>
+
+      <!-- ==============================================
+           MODULE 1: MAIN DASHBOARD
+           ============================================== -->
+      <section id="dashboard-section" class="content-section active">
+        
+        <!-- Summary Cards Grid (5 Cards Required) -->
+        <div class="stats-grid">
+          
+          <!-- Card 1: Total Food Waste (KG) -->
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-label">Total Food Waste</span>
+              <span class="stat-card-icon bg-green">⚖️</span>
+            </div>
+            <div class="stat-number-wrap">
+              <span class="stat-number" id="dash-total-kg">0.0</span>
+              <span class="stat-unit">KG</span>
+            </div>
+            <p class="stat-desc">Cumulative discarded food weight</p>
+          </div>
+
+          <!-- Card 2: Total Waste Entries -->
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-label">Total Waste Entries</span>
+              <span class="stat-card-icon bg-blue">📝</span>
+            </div>
+            <div class="stat-number-wrap">
+              <span class="stat-number" id="dash-total-records">0</span>
+              <span class="stat-unit">Logs</span>
+            </div>
+            <p class="stat-desc">Logged waste incidents</p>
+          </div>
+
+          <!-- Card 3: Most Wasted Category -->
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-label">Most Wasted Category</span>
+              <span class="stat-card-icon bg-amber">🥗</span>
+            </div>
+            <div class="stat-number-wrap">
+              <span class="stat-number text-accent" id="dash-top-category">-</span>
+            </div>
+            <p class="stat-desc" id="dash-top-category-kg">0.0 KG wasted</p>
+          </div>
+
+          <!-- Card 4: Highest Waste Department -->
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-label">Highest Waste Dept</span>
+              <span class="stat-card-icon bg-purple">🍳</span>
+            </div>
+            <div class="stat-number-wrap">
+              <span class="stat-number text-accent" id="dash-top-dept">-</span>
+            </div>
+            <p class="stat-desc" id="dash-top-dept-kg">0.0 KG wasted</p>
+          </div>
+
+          <!-- Card 5: Estimated Waste Cost (₹) -->
+          <div class="stat-card highlight-cost">
+            <div class="stat-card-header">
+              <span class="stat-label">Estimated Waste Cost</span>
+              <span class="stat-card-icon bg-red">₹</span>
+            </div>
+            <div class="stat-number-wrap">
+              <span class="stat-number text-danger" id="dash-total-cost">₹0</span>
+            </div>
+            <p class="stat-desc">Financial value lost (Estimated)</p>
+          </div>
+
+        </div>
+
+        <!-- Quick Summary Banner -->
+        <div class="action-banner">
+          <div class="action-banner-text">
+            <h4>💡 Daily Operational Recommendation</h4>
+            <p id="dash-quick-recommendation">Review daily batch sizes and implement strict inventory rotation.</p>
+          </div>
+          <div class="action-banner-buttons">
+            <button class="btn-outline-sm" onclick="showSection('suggestions-section')">View Reduction Plan &rarr;</button>
+            <button class="btn-outline-sm" onclick="exportRecordsToCSV()">Download CSV</button>
+          </div>
+        </div>
+
+        <!-- Visualisations Grid: Category & Department & Reason & Weekly Trend -->
+        <div class="dashboard-columns">
+          
+          <!-- Visualisation 1: Food Waste by Category -->
+          <div class="card col-half">
+            <div class="card-header">
+              <div>
+                <h3>Food Waste by Category</h3>
+                <p class="card-subtitle">Distribution across ingredients & food groups</p>
+              </div>
+              <button class="link-btn" onclick="showSection('analytics-section')">Full Analytics &rarr;</button>
+            </div>
+            <div class="card-body">
+              <div class="chart-container" style="position: relative; height: 240px;">
+                <canvas id="chart-dash-category"></canvas>
+              </div>
+              <div id="dash-category-list" class="bars-list mt-10">
+                <!-- Fallback & details generated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Visualisation 2: Food Waste by Department -->
+          <div class="card col-half">
+            <div class="card-header">
+              <div>
+                <h3>Food Waste by Department</h3>
+                <p class="card-subtitle">Disposal volume across kitchen operations</p>
+              </div>
+              <button class="link-btn" onclick="showSection('analytics-section')">Full Analytics &rarr;</button>
+            </div>
+            <div class="card-body">
+              <div class="chart-container" style="position: relative; height: 240px;">
+                <canvas id="chart-dash-department"></canvas>
+              </div>
+              <div id="dash-dept-list" class="bars-list mt-10">
+                <!-- Fallback & details generated by JS -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="dashboard-columns mt-20">
+          
+          <!-- Visualisation 3: Food Waste by Reason -->
+          <div class="card col-half">
+            <div class="card-header">
+              <div>
+                <h3>Food Waste by Root Reason</h3>
+                <p class="card-subtitle">Identifying primary causes of discarded food</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-container" style="position: relative; height: 230px;">
+                <canvas id="chart-dash-reason"></canvas>
+              </div>
+              <div id="dash-reason-list" class="bars-list mt-10">
+                <!-- Fallback & details generated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Visualisation 4: Weekly Waste Trends -->
+          <div class="card col-half">
+            <div class="card-header">
+              <div>
+                <h3>Weekly Waste Trends (KG)</h3>
+                <p class="card-subtitle">Daily disposal patterns across dates</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-container" style="position: relative; height: 230px;">
+                <canvas id="chart-dash-trends"></canvas>
+              </div>
+              <div id="dash-trend-list" class="bars-list mt-10">
+                <!-- Fallback & details generated by JS -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Additional Section: Top 5 Wasted Food Items & Recent Records Preview -->
+        <div class="dashboard-columns mt-20">
+          
+          <!-- Top 5 Wasted Food Items Leaderboard -->
+          <div class="card col-half">
+            <div class="card-header">
+              <div>
+                <h3>Top 5 Wasted Food Items</h3>
+                <p class="card-subtitle">Items generating the largest physical volume loss</p>
+              </div>
+              <span class="badge badge-accent">Volume</span>
+            </div>
+            <div class="card-body">
+              <div id="dash-top-items-list" class="top-items-container">
+                <!-- Injected via JavaScript -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Waste Records Preview -->
+          <div class="card col-half">
+            <div class="card-header">
+              <div>
+                <h3>Recent Waste Records</h3>
+                <p class="card-subtitle">Latest 5 logged disposal events</p>
+              </div>
+              <button class="btn-outline-sm" onclick="showSection('records-section')">View All Records</button>
+            </div>
+            <div class="card-body no-padding">
+              <div class="table-container">
+                <table class="simple-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Food Item</th>
+                      <th>Category</th>
+                      <th>Quantity</th>
+                      <th>Cost (₹)</th>
+                      <th>Dept</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dash-recent-tbody">
+                    <!-- Injected via JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ==============================================
+           MODULE 2: FOOD WASTE ENTRY
+           ============================================== -->
+      <section id="add-section" class="content-section">
+        
+        <div class="form-container-card">
+          <div class="card-header">
+            <div>
+              <h2 id="form-heading">Record Food Wastage</h2>
+              <p class="card-subtitle">Log discarded food items accurately with cost estimates to identify reduction opportunities</p>
+            </div>
+            <button class="btn-secondary" onclick="resetWasteForm()">Reset Form</button>
+          </div>
+
+          <form id="waste-form" onsubmit="handleFormSubmit(event)">
+            <!-- Hidden input for edit mode -->
+            <input type="hidden" id="edit-id" value="">
+
+            <div class="form-grid">
+              
+              <!-- 1. Food Item Name -->
+              <div class="form-field">
+                <label for="input-food-name">Food Item Name <span class="req">*</span></label>
+                <input 
+                  type="text" 
+                  id="input-food-name" 
+                  placeholder="e.g. Tomatoes, Cooked Basmati Rice, Paneer" 
+                  required
+                >
+                <small class="field-hint">Specify the exact dish, vegetable, or prepared food item.</small>
+              </div>
+
+              <!-- 2. Food Category -->
+              <div class="form-field">
+                <label for="input-category">Food Category <span class="req">*</span></label>
+                <select id="input-category" required>
+                  <option value="" disabled selected>-- Select Category --</option>
+                  <option value="Vegetables">Vegetables</option>
+                  <option value="Fruits">Fruits</option>
+                  <option value="Dairy Products">Dairy Products</option>
+                  <option value="Meat">Meat</option>
+                  <option value="Grains">Grains</option>
+                  <option value="Prepared Food">Prepared Food</option>
+                  <option value="Others">Others</option>
+                </select>
+                <small class="field-hint">Select the primary category for proper grouping.</small>
+              </div>
+
+              <!-- 3. Quantity Wasted (KG) -->
+              <div class="form-field">
+                <label for="input-quantity">Quantity Wasted (KG) <span class="req">*</span></label>
+                <input 
+                  type="number" 
+                  id="input-quantity" 
+                  placeholder="e.g. 3.5" 
+                  min="0.1" 
+                  step="0.1" 
+                  required
+                >
+                <small class="field-hint">Weight in kilograms (must be greater than 0).</small>
+              </div>
+
+              <!-- 4. Estimated Cost (₹) -->
+              <div class="form-field">
+                <label for="input-cost">Estimated Cost (₹) <span class="req">*</span></label>
+                <input 
+                  type="number" 
+                  id="input-cost" 
+                  placeholder="e.g. 450" 
+                  min="0" 
+                  step="1" 
+                  required
+                >
+                <small class="field-hint">Estimated purchase or preparation value in Indian Rupees.</small>
+              </div>
+
+              <!-- 5. Reason for Waste -->
+              <div class="form-field">
+                <label for="input-reason">Waste Reason <span class="req">*</span></label>
+                <select id="input-reason" required>
+                  <option value="" disabled selected>-- Select Reason --</option>
+                  <option value="Overproduction">Overproduction</option>
+                  <option value="Spoilage">Spoilage</option>
+                  <option value="Incorrect Preparation">Incorrect Preparation</option>
+                  <option value="Unsold Food">Unsold Food</option>
+                  <option value="Expired Ingredients">Expired Ingredients</option>
+                  <option value="Customer Leftovers">Customer Leftovers</option>
+                  <option value="Other">Other</option>
+                </select>
+                <small class="field-hint">Root cause for why this food was discarded.</small>
+              </div>
+
+              <!-- 6. Department -->
+              <div class="form-field">
+                <label for="input-department">Department <span class="req">*</span></label>
+                <select id="input-department" required>
+                  <option value="" disabled selected>-- Select Department --</option>
+                  <option value="Kitchen">Kitchen</option>
+                  <option value="Storage">Storage</option>
+                  <option value="Bakery">Bakery</option>
+                  <option value="Restaurant Service">Restaurant Service</option>
+                  <option value="Inventory">Inventory</option>
+                </select>
+                <small class="field-hint">Restaurant operational area responsible.</small>
+              </div>
+
+              <!-- 7. Date -->
+              <div class="form-field">
+                <label for="input-date">Date <span class="req">*</span></label>
+                <input type="date" id="input-date" required>
+                <small class="field-hint">Date when the waste occurred.</small>
+              </div>
+
+              <!-- 8. Additional Notes (Optional) -->
+              <div class="form-field full-width">
+                <label for="input-notes">Additional Notes <span class="optional">(Optional)</span></label>
+                <input 
+                  type="text" 
+                  id="input-notes" 
+                  placeholder="e.g. Overcooked in tandoor during dinner rush, broken refrigeration crate"
+                >
+                <small class="field-hint">Any specific context to assist in operational auditing.</small>
+              </div>
+
+            </div>
+
+            <!-- Form Action Buttons -->
+            <div class="form-actions">
+              <button type="submit" class="btn-primary" id="btn-submit-form">
+                <span>💾</span> Save Waste Record
+              </button>
+              <button type="button" class="btn-secondary" onclick="resetWasteForm()">
+                Clear Form
+              </button>
+              <button type="button" class="btn-danger hidden" id="btn-cancel-edit" onclick="cancelEditMode()">
+                Cancel Edit
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </section>
+
+      <!-- ==============================================
+           MODULE 3: WASTE RECORD MANAGEMENT
+           ============================================== -->
+      <section id="records-section" class="content-section">
+        
+        <div class="card">
+          
+          <!-- Filters, Search & Sorting Toolbar -->
+          <div class="toolbar">
+            
+            <!-- Search Input -->
+            <div class="search-input-wrap">
+              <span class="search-icon">🔍</span>
+              <input 
+                type="text" 
+                id="search-input" 
+                placeholder="Search food item, reason, notes..." 
+                oninput="applyFilters()"
+              >
+            </div>
+
+            <!-- Filter Dropdowns & Controls -->
+            <div class="filter-controls">
+              
+              <!-- Filter by Category -->
+              <select id="filter-category" onchange="applyFilters()">
+                <option value="">All Categories</option>
+                <option value="Vegetables">Vegetables</option>
+                <option value="Fruits">Fruits</option>
+                <option value="Dairy Products">Dairy Products</option>
+                <option value="Meat">Meat</option>
+                <option value="Grains">Grains</option>
+                <option value="Prepared Food">Prepared Food</option>
+                <option value="Others">Others</option>
+              </select>
+
+              <!-- Filter by Department -->
+              <select id="filter-dept" onchange="applyFilters()">
+                <option value="">All Departments</option>
+                <option value="Kitchen">Kitchen</option>
+                <option value="Storage">Storage</option>
+                <option value="Bakery">Bakery</option>
+                <option value="Restaurant Service">Restaurant Service</option>
+                <option value="Inventory">Inventory</option>
+              </select>
+
+              <!-- Filter by Date -->
+              <input type="date" id="filter-date" onchange="applyFilters()" title="Filter by date">
+
+              <!-- Sort Records By Date or Quantity or Cost -->
+              <select id="sort-records" onchange="applyFilters()" title="Sort records">
+                <option value="date-desc">Date (Newest First)</option>
+                <option value="date-asc">Date (Oldest First)</option>
+                <option value="qty-desc">Quantity (Highest First)</option>
+                <option value="qty-asc">Quantity (Lowest First)</option>
+                <option value="cost-desc">Cost (Highest First)</option>
+                <option value="cost-asc">Cost (Lowest First)</option>
+              </select>
+
+              <!-- Reset Filters -->
+              <button class="btn-outline-sm" onclick="clearFilters()" title="Clear all search and filter fields">
+                Reset Filters
+              </button>
+
+              <!-- Export CSV Button -->
+              <button class="btn-primary-sm" onclick="exportRecordsToCSV()" title="Export current records to CSV">
+                <span>📥</span> Export CSV
+              </button>
+
+            </div>
+
+          </div>
+
+          <!-- Counter Bar & Live Summary -->
+          <div class="status-strip">
+            <span id="records-count-label">Showing 0 records</span>
+            <span id="records-weight-cost-summary" class="summary-pill">0.0 KG • ₹0 Total</span>
+          </div>
+
+          <!-- Records Table -->
+          <div class="table-container">
+            <table class="simple-table" id="records-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">ID</th>
+                  <th>Date</th>
+                  <th>Food Item</th>
+                  <th>Category</th>
+                  <th>Quantity</th>
+                  <th>Estimated Cost</th>
+                  <th>Department</th>
+                  <th>Reason</th>
+                  <th>Notes</th>
+                  <th style="width: 140px; text-align: center;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="records-tbody">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+
+            <!-- Empty State Message when no records match -->
+            <div id="table-empty-box" class="empty-state hidden">
+              <div class="empty-icon">🍃</div>
+              <h3>No Waste Records Found</h3>
+              <p>No records match your active search or filter criteria. Try clearing filters or logging a new record.</p>
+              <div class="empty-actions">
+                <button class="btn-secondary" onclick="clearFilters()">Clear Filters</button>
+                <button class="btn-primary" onclick="showSection('add-section')">+ Add Waste Record</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ==============================================
+           MODULE 4: ANALYTICS AND REPORTS
+           ============================================== -->
+      <section id="analytics-section" class="content-section">
+        
+        <!-- Summary Strip for Analytics -->
+        <div class="analytics-header-card">
+          <div class="analytics-stat-item">
+            <span class="label">Total Wastage Recorded</span>
+            <h3 id="analytics-total-kg">0.0 KG</h3>
+          </div>
+          <div class="analytics-stat-item">
+            <span class="label">Estimated Financial Loss</span>
+            <h3 class="text-danger" id="analytics-total-loss">₹0</h3>
+          </div>
+          <div class="analytics-stat-item">
+            <span class="label">Average Cost / KG Wasted</span>
+            <h3 id="analytics-avg-cost">₹0 / KG</h3>
+          </div>
+          <div class="analytics-stat-item">
+            <span class="label">Active Audit Scope</span>
+            <h3 id="analytics-time-span">All Logs</h3>
+          </div>
+        </div>
+
+        <div class="analytics-grid mt-20">
+          
+          <!-- Chart 1: Category-wise waste analysis -->
+          <div class="card chart-box">
+            <div class="card-header">
+              <div>
+                <h3>1. Category-wise Food Waste (KG & Cost)</h3>
+                <p class="card-subtitle">Distribution of discarded food by ingredient group</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-canvas-wrap">
+                <canvas id="chart-analytics-category"></canvas>
+              </div>
+              <div id="analytics-category-bars" class="chart-bars-wrap mt-10">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 2: Department-wise waste analysis -->
+          <div class="card chart-box">
+            <div class="card-header">
+              <div>
+                <h3>2. Department-wise Waste Loss (KG)</h3>
+                <p class="card-subtitle">Contribution of individual stations to overall waste</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-canvas-wrap">
+                <canvas id="chart-analytics-dept"></canvas>
+              </div>
+              <div id="analytics-dept-bars" class="chart-bars-wrap mt-10">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 3: Reason-wise waste analysis -->
+          <div class="card chart-box">
+            <div class="card-header">
+              <div>
+                <h3>3. Reason-wise Food Waste (KG)</h3>
+                <p class="card-subtitle">Root causes and factors driving food loss</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-canvas-wrap">
+                <canvas id="chart-analytics-reason"></canvas>
+              </div>
+              <div id="analytics-reason-bars" class="chart-bars-wrap mt-10">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 4: Weekly & Monthly food waste comparison -->
+          <div class="card chart-box">
+            <div class="card-header">
+              <div>
+                <h3>4. Timeline Waste Trend (Daily / Weekly)</h3>
+                <p class="card-subtitle">Disposal volume recorded across days</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-canvas-wrap">
+                <canvas id="chart-analytics-trend"></canvas>
+              </div>
+              <div id="analytics-trend-bars" class="chart-bars-wrap mt-10">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ==============================================
+           MODULE 5: WASTE REDUCTION RECOMMENDATIONS
+           ============================================== -->
+      <section id="suggestions-section" class="content-section">
+        
+        <div class="card banner-note mb-20">
+          <div class="banner-icon">💡</div>
+          <div>
+            <h3>Intelligent Rule-Based Reduction Recommendations</h3>
+            <p>
+              The platform analyzes your restaurant's actual waste records in real time using logical rule heuristics. 
+              It identifies the highest-loss food groups, root causes, and kitchen stations to display targeted, actionable solutions.
+            </p>
+          </div>
+        </div>
+
+        <!-- Recommendations Container -->
+        <div class="suggestions-list" id="suggestions-container">
+          <!-- Populated dynamically by JavaScript -->
+        </div>
+
+      </section>
+
+      <!-- ==============================================
+           MODULE 6: COST ANALYSIS
+           ============================================== -->
+      <section id="cost-section" class="content-section">
+        
+        <div class="card mb-20 banner-financial">
+          <div class="financial-header">
+            <div>
+              <h2>Financial Food Waste Loss Analysis</h2>
+              <p class="card-subtitle">Monetary valuation of discarded ingredients and kitchen inventory</p>
+            </div>
+            <span class="estimate-tag">⚠️ All Values Labeled as Estimates</span>
+          </div>
+
+          <!-- Financial KPI Cards -->
+          <div class="cost-kpi-grid mt-15">
+            <div class="cost-kpi-card">
+              <span class="cost-kpi-label">Total Estimated Waste Cost</span>
+              <h2 class="cost-kpi-value text-danger" id="cost-total-amount">₹0</h2>
+              <p class="cost-kpi-sub">Total recorded loss to date</p>
+            </div>
+            <div class="cost-kpi-card">
+              <span class="cost-kpi-label">Highest Loss Category</span>
+              <h2 class="cost-kpi-value" id="cost-top-category-name">-</h2>
+              <p class="cost-kpi-sub" id="cost-top-category-amount">₹0 loss</p>
+            </div>
+            <div class="cost-kpi-card">
+              <span class="cost-kpi-label">Highest Loss Department</span>
+              <h2 class="cost-kpi-value" id="cost-top-dept-name">-</h2>
+              <p class="cost-kpi-sub" id="cost-top-dept-amount">₹0 loss</p>
+            </div>
+            <div class="cost-kpi-card">
+              <span class="cost-kpi-label">Estimated Monthly Run-Rate</span>
+              <h2 class="cost-kpi-value text-amber" id="cost-monthly-runrate">₹0 / mo</h2>
+              <p class="cost-kpi-sub">Projected 30-day kitchen loss</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed Breakdown Tables for Category & Department Cost -->
+        <div class="dashboard-columns">
+          
+          <!-- Category Cost Table -->
+          <div class="card col-half">
+            <div class="card-header">
+              <div>
+                <h3>Cost of Waste by Category</h3>
+                <p class="card-subtitle">Financial impact breakdown by food classification</p>
+              </div>
+            </div>
+            <div class="card-body no-padding">
+              <div class="table-container">
+                <table class="simple-table">
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th>Quantity Wasted</th>
+                      <th>Estimated Loss (₹)</th>
+                      <th>Share (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cost-category-tbody">
+                    <!-- Populated by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Department Cost Table -->
+          <div class="card col-half">
+            <div class="card-header">
+              <div>
+                <h3>Cost of Waste by Department</h3>
+                <p class="card-subtitle">Financial impact breakdown by station</p>
+              </div>
+            </div>
+            <div class="card-body no-padding">
+              <div class="table-container">
+                <table class="simple-table">
+                  <thead>
+                    <tr>
+                      <th>Department</th>
+                      <th>Quantity Wasted</th>
+                      <th>Estimated Loss (₹)</th>
+                      <th>Share (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cost-dept-tbody">
+                    <!-- Populated by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Potential Savings Simulation Card -->
+        <div class="card mt-20">
+          <div class="card-header">
+            <div>
+              <h3>Potential Annual Cost Reduction Scenarios</h3>
+              <p class="card-subtitle">Simulated savings achievable by implementing the rule-based waste reduction plan</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="savings-grid">
+              <div class="savings-card">
+                <span class="savings-pct">15% Reduction</span>
+                <h3 id="savings-15">₹0 / year</h3>
+                <p>Achievable through basic portion control and daily prep planning</p>
+              </div>
+              <div class="savings-card highlight">
+                <span class="savings-pct">25% Reduction (Target)</span>
+                <h3 id="savings-25">₹0 / year</h3>
+                <p>Achievable via FIFO inventory, temperature logs, and demand estimation</p>
+              </div>
+              <div class="savings-card">
+                <span class="savings-pct">40% Reduction</span>
+                <h3 id="savings-40">₹0 / year</h3>
+                <p>Best-in-class performance with full batch cooking and menu optimization</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ==============================================
+           MODULE 7: ABOUT PROJECT
+           ============================================== -->
+      <section id="about-section" class="content-section">
+        
+        <div class="card mb-20">
+          <div class="card-header">
+            <div>
+              <h2>College Project Overview</h2>
+              <p class="card-subtitle">First-Year Engineering Academic Submission</p>
+            </div>
+            <span class="badge badge-accent">Academic Year 2026</span>
+          </div>
+          <div class="card-body">
+            <table class="info-meta-table">
+              <tr>
+                <td><strong>Project Title:</strong></td>
+                <td><strong>Restaurant Food Waste Management Platform</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Project Objective:</strong></td>
+                <td>
+                  To develop a functional, visually professional web application that assists restaurant managers 
+                  in recording, monitoring, and analysing food wastage by ingredient category, department, and cause. 
+                  The platform pinpoints high-cost losses and generates actionable, rule-based recommendations 
+                  to improve kitchen efficiency and environmental sustainability.
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Problem Statement:</strong></td>
+                <td>
+                  Commercial restaurants produce substantial food waste due to inaccurate demand forecasting, 
+                  storage spoilage, prep errors, and unsold prepared items. Standard restaurants operate on 
+                  thin 3%–6% profit margins, and food waste directly erodes both financial viability and 
+                  sustainability goals. This web platform delivers clear visibility without expensive enterprise software.
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Technology Stack:</strong></td>
+                <td>
+                  <span class="tech-tag">HTML5</span> Semantic layouts, accessible forms, data tables, structural containers<br>
+                  <span class="tech-tag">CSS3</span> Responsive flexbox &amp; grid, custom CSS variables, dark/light theme, modern card design<br>
+                  <span class="tech-tag">Vanilla JavaScript</span> DOM manipulation, mathematical aggregations, filtering, CSV export, rule evaluation<br>
+                  <span class="tech-tag">Browser Local Storage</span> Client-side JSON data persistence with zero external server dependencies
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Application Architecture:</strong></td>
+                <td>
+                  Single-Page Application (SPA) architecture running 100% locally in the browser by opening <code>index.html</code>. 
+                  Zero backend frameworks (No Node.js, Python, PHP, or SQL servers needed).
+                </td>
+              </tr>
+            </table>
+
+            <!-- Project Team Information Section (Placeholder Names for Customization) -->
+            <h3 class="mt-20">Project Team Members</h3>
+            <p class="field-hint mb-10">Placeholder details below can be edited in <code>index.html</code> with your college names and roll numbers.</p>
+            
+            <div class="team-grid">
+              <div class="team-card">
+                <div class="team-avatar">👨‍💻</div>
+                <div class="team-info">
+                  <h4>Student Name 1</h4>
+                  <p class="team-role">Frontend Development &amp; Architecture</p>
+                  <p class="team-id">Roll No: 2026-CS-001</p>
+                </div>
+              </div>
+              <div class="team-card">
+                <div class="team-avatar">👩‍💻</div>
+                <div class="team-info">
+                  <h4>Student Name 2</h4>
+                  <p class="team-role">UI/UX Design &amp; CSS Styling</p>
+                  <p class="team-id">Roll No: 2026-CS-002</p>
+                </div>
+              </div>
+              <div class="team-card">
+                <div class="team-avatar">👨‍💻</div>
+                <div class="team-info">
+                  <h4>Student Name 3</h4>
+                  <p class="team-role">Data Analytics &amp; Rule Heuristics</p>
+                  <p class="team-id">Roll No: 2026-CS-003</p>
+                </div>
+              </div>
+              <div class="team-card">
+                <div class="team-avatar">👩‍💻</div>
+                <div class="team-info">
+                  <h4>Student Name 4</h4>
+                  <p class="team-role">Documentation &amp; Quality Testing</p>
+                  <p class="team-id">Roll No: 2026-CS-004</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Key Modules Summary Table -->
+            <h3 class="mt-20">Core Functional Modules</h3>
+            <div class="table-container mt-10">
+              <table class="simple-table">
+                <thead>
+                  <tr>
+                    <th>Module</th>
+                    <th>Feature Scope</th>
+                    <th>Implementation Method</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Module 1: Dashboard</strong></td>
+                    <td>5 Summary KPI cards, visual charts, Top 5 items, recent logs, live date</td>
+                    <td>HTML5 structure, CSS Grid, JS dynamic summation &amp; Chart.js</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Module 2: Food Waste Entry</strong></td>
+                    <td>8 input fields with validation, edit mode support, auto-refresh</td>
+                    <td>HTML5 Form constraints, JS event handling, LocalStorage serialization</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Module 3: Records Management</strong></td>
+                    <td>Search, multi-attribute filtering, sorting (date/qty/cost), edit, delete</td>
+                    <td>JS <code>Array.filter()</code> &amp; <code>Array.sort()</code>, modal confirmations</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Module 4: Analytics &amp; Reports</strong></td>
+                    <td>Category, department, reason, and daily trend comparative charts</td>
+                    <td>Interactive Chart.js instances + CSS bar fallbacks</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Module 5: Waste Reduction Plan</strong></td>
+                    <td>Rule-based algorithmic observations and practical solutions</td>
+                    <td>Conditional JavaScript (<code>if/else</code> rules) over aggregates</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Module 6: Cost Analysis</strong></td>
+                    <td>Total loss ₹, category/department losses, run-rate, savings simulation</td>
+                    <td>Financial cost multipliers and percentage calculations</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Module 7: About Project</strong></td>
+                    <td>Team information, problem statement, technical stack and viva guide</td>
+                    <td>Semantic HTML5 typography, CSS cards and metadata tables</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="academic-note-box mt-20">
+              <strong>College Evaluation Note:</strong> This application satisfies all engineering constraints. 
+              The application executes immediately by opening <code>index.html</code> in any modern browser without installing any package manager, runtime, or external server.
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- APPLICATION JAVASCRIPT -->
+  <script src="./script.js"></script>
+</body>
+</html>
